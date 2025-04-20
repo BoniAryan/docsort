@@ -1,0 +1,165 @@
+{% extends 'docsort/basic.html' %}
+{% block body %}
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Document Library</h1><br>
+            {% if user.is_authenticated %}
+            <h3>Welcome , {{ request.user.username }}</h3>
+<!--            <a href="{% url 'upload' %}" class="btn btn-primary">-->
+<!--                <i class="bi bi-upload me-2"></i>Upload Document-->
+<!--            </a>-->
+              <a href="{% url 'logout' %}" class="btn btn-primary">
+                <i class="bi bi-upload me-2"></i>SignOut
+            </a>
+            {% endif %}
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Search Section -->
+        <div class="search-container mb-4">
+            <div class="row">
+                <div class="col-md-8 mb-3 mb-md-0">
+                    <div class="input-group">
+                        <input type="text" id="search-input" class="form-control" placeholder="Search documents by title, description, or keywords...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="filter-type">
+                        <option value="all">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category.name_trimmed }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Cards -->
+        <div class="row" id="document-container">
+            {% if documents %}
+                {% for document in documents %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card document-card h-100">
+                        <div class="preview-container">
+                            {% if document.thumbnail %}
+                                <img src="{{ document.thumbnail.url }}" class="card-img-top" alt="{{ document.title }}">
+                            {% else %}
+                                <div class="placeholder-img d-flex align-items-center justify-content-center bg-light" style="height: 180px;">
+                                    <i class="bi bi-file-earmark-text" style="font-size: 3rem; color: #ccc;"></i>
+                                </div>
+                            {% endif %}
+                            <span class="category">{{ document.category }}</span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ document.title }}</h5>
+                            <p class="card-text">{{ document.description|truncatechars:100 }}</p>
+                            <div class="keywords mb-3">
+                                {% for keyword in document.get_keywords_list %}
+                                    <span class="tag">{{ keyword }}</span>
+                                {% endfor %}
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{% url 'document_detail' document.id %}" class="btn btn-primary btn-sm">View Document</a>
+                                <small class="text-muted">{{ document.upload_date|date:"M d, Y" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12 text-center py-5">
+                    <h3>No documents found</h3>
+                    <p>{% if user.is_authenticated %}Upload some documents to get started{% else %}Log in to upload and view documents{% endif %}</p>
+                    {% if not user.is_authenticated %}
+                    <a href="{% url 'login' %}" class="btn btn-primary mt-3">Login</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div id="no-results" class="mt-4" style="display: none;">
+            <h3>No documents found matching your search</h3>
+            <p>Try different keywords or clear your search filters</p>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Document search functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get DOM elements
+            const searchInput = document.getElementById('search-input');
+            const filterTypeSelect = document.getElementById('filter-type');
+            const documentContainer = document.getElementById('document-container');
+            const noResultsMessage = document.getElementById('no-results');
+
+            // Function to perform search on each keystroke
+            function performSearch() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                const filterType = filterTypeSelect.value.toLowerCase();
+
+                // Get all document cards
+                const documentCards = document.querySelectorAll('.col-md-6.col-lg-4.mb-4');
+
+                let visibleCount = 0;
+
+                // Loop through each card and check if it matches the search criteria
+                documentCards.forEach(card => {
+                    // Get the text content from various elements within the card
+                    const title = card.querySelector('.card-title').textContent.toLowerCase();
+                    const description = card.querySelector('.card-text').textContent.toLowerCase();
+                    const docType = card.querySelector('.category').textContent.toLowerCase().replace(/\s+/g, '');
+
+                    // Get all tags/keywords text
+                    let keywords = '';
+                    card.querySelectorAll('.tag').forEach(tag => {
+                        keywords += tag.textContent.toLowerCase() + ' ';
+                    });
+
+                    // Check if card matches search term
+                    const matchesSearch = searchTerm === '' ||
+                                        title.includes(searchTerm) ||
+                                        description.includes(searchTerm) ||
+                                        keywords.includes(searchTerm);
+
+                    // Check if card matches selected document type filter
+                    const matchesType = filterType === 'all' || docType === filterType;
+
+                    // Show or hide the card based on both conditions
+                    if (matchesSearch && matchesType) {
+                        card.style.display = '';
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                // Show "no results" message if no cards are visible
+                if (visibleCount === 0 && documentCards.length > 0) {
+                    noResultsMessage.style.display = 'block';
+                } else {
+                    noResultsMessage.style.display = 'none';
+                }
+            }
+
+            // Add event listeners for both search input and filter type select
+            if (searchInput && filterTypeSelect) {
+                searchInput.addEventListener('input', performSearch);
+                filterTypeSelect.addEventListener('change', performSearch);
+
+                // Initial call to set up the view correctly
+                performSearch();
+            }
+        });
+    </script>
+{% endblock %}
