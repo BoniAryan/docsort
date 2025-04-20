@@ -10,5 +10,6 @@ urlpatterns = [
     path('upload/', views.upload, name='upload'),
     path('document/<int:doc_id>/', views.document_detail, name='document_detail'),
     path('document/<int:doc_id>/download/<int:file_num>/', views.download_file, name='download_file'),
-
+    path('document/<int:doc_id>/delete/', views.delete_document, name='delete_document'),
+    path('document/<int:doc_id>/edit/', views.edit_document, name='edit_document'),
 ]

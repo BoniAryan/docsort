@@ -154,3 +154,75 @@ def download_file(request, doc_id, file_num):
     response = FileResponse(open(file_path, 'rb'))
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+
+# Delete document handler
+@login_required(login_url='login')
+def delete_document(request, doc_id):
+    document = get_object_or_404(Document, id=doc_id)
+    
+    # Check if user is authorized to delete the document
+    if not (request.user.is_superuser or request.user == document.uploaded_by):
+        messages.error(request, "You don't have permission to delete this document.")
+        return redirect('document_detail', doc_id=doc_id)
+    
+    if request.method == 'POST':
+        title = document.title
+        document.delete()
+        messages.success(request, f"Document '{title}' has been deleted successfully.")
+        return redirect('index')
+    
+    # If it's a GET request, redirect to document detail
+    return redirect('document_detail', doc_id=doc_id)
+
+
+# Edit document view
+@login_required(login_url='login')
+def edit_document(request, doc_id):
+    document = get_object_or_404(Document, id=doc_id)
+    categories = Category.objects.all()
+    
+    # Check if user is authorized to edit the document
+    if not (request.user.is_superuser or request.user == document.uploaded_by):
+        messages.error(request, "You don't have permission to edit this document.")
+        return redirect('document_detail', doc_id=doc_id)
+    
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        keywords = request.POST.get('keywords')
+        category_name = request.POST.get('category')
+        
+        # Get or create category
+        category, created = Category.objects.get_or_create(name=category_name)
+        
+        # Update document
+        document.title = title
+        document.description = description
+        document.keywords = keywords
+        document.category = category
+        
+        # Handle file uploads
+        if 'thumbnail' in request.FILES:
+            document.thumbnail = request.FILES['thumbnail']
+            
+        if 'file1' in request.FILES:
+            document.file1 = request.FILES['file1']
+            
+        if 'file2' in request.FILES:
+            document.file2 = request.FILES['file2']
+        
+        document.save()
+        
+        messages.success(request, f"Document '{title}' updated successfully!")
+        return redirect('document_detail', doc_id=doc_id)
+    
+    # Get keywords as a list
+    keywords = document.get_keywords_list()
+    
+    context = {
+        'document': document,
+        'categories': categories,
+        'keywords': ", ".join(keywords),
+    }
+    return render(request, 'docsort/edit_document.html', context)

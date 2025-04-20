@@ -1,0 +1,203 @@
+{% extends 'docsort/basic.html' %}
+{% block body %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-4 bg-gradient-primary text-white">
+                    <h1 class="h3 mb-2 fw-bold">Edit Document: {{ document.title }}</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="row mb-4">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Document Edit Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-header py-3 bg-light">
+                    <h6 class="m-0 fw-bold text-primary">Edit Details</h6>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        <!-- Main Document Info -->
+                        <div class="row g-4 mb-4">
+                            <div class="col-lg-6">
+                                <div class="card h-100 border-0 shadow-sm rounded-3">
+                                    <div class="card-header bg-light py-3">
+                                        <h6 class="m-0 fw-bold text-primary">Basic Information</h6>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <div class="mb-3">
+                                            <label for="title" class="form-label fw-bold">Title</label>
+                                            <input type="text" class="form-control form-control-lg rounded-3" id="title" name="title" value="{{ document.title }}" required>
+                                            <div class="invalid-feedback">Please enter a Title</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="keywords" class="form-label fw-bold">Keywords</label>
+                                            <input type="text" class="form-control form-control-lg rounded-3" id="keywords" name="keywords" value="{{ keywords }}">
+                                            <div class="form-text">Enter keywords separated by commas</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="category" class="form-label fw-bold">Document Category</label>
+                                            <select class="form-select rounded-3" id="category" name="category">
+                                                {% for category in categories %}
+                                                <option value="{{ category.name }}" {% if document.category.name == category.name %}selected{% endif %}>{{ category.name }}</option>
+                                                {% endfor %}
+                                                <option value="OTHERS" {% if document.category.name == "OTHERS" %}selected{% endif %}>Others</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-6">
+                                <div class="card h-100 border-0 shadow-sm rounded-3">
+                                    <div class="card-header bg-light py-3">
+                                        <h6 class="m-0 fw-bold text-primary">Description</h6>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <div class="mb-3">
+                                            <label for="description" class="form-label fw-bold">Document Description</label>
+                                            <textarea class="form-control rounded-3" id="description" name="description" rows="8" style="height: calc(100% - 40px);">{{ document.description }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Files -->
+                        <div class="row g-4 mb-4">
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm rounded-3">
+                                    <div class="card-header bg-light py-3">
+                                        <h6 class="m-0 fw-bold text-primary">Files</h6>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label for="thumbnail" class="form-label fw-bold">Thumbnail Image</label>
+                                                    {% if document.thumbnail %}
+                                                    <div class="mb-2">
+                                                        <img src="{{ document.thumbnail.url }}" alt="Current Thumbnail" class="img-thumbnail" style="max-height: 100px;">
+                                                        <p class="form-text">Current thumbnail</p>
+                                                    </div>
+                                                    {% endif %}
+                                                    <div class="input-group">
+                                                        <input type="file" class="form-control rounded-3" id="thumbnail" name="thumbnail" accept="image/*">
+                                                    </div>
+                                                    <div class="form-text">Leave empty to keep current thumbnail</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label for="file1" class="form-label fw-bold">Primary File</label>
+                                                    {% if document.file1 %}
+                                                    <div class="mb-2">
+                                                        <p class="form-text">Current file: {{ document.file1.name|slice:"6:" }}</p>
+                                                    </div>
+                                                    {% endif %}
+                                                    <div class="input-group">
+                                                        <input type="file" class="form-control rounded-3" id="file1" name="file1">
+                                                    </div>
+                                                    <div class="form-text">Leave empty to keep current file</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label for="file2" class="form-label fw-bold">Additional File</label>
+                                                    {% if document.file2 %}
+                                                    <div class="mb-2">
+                                                        <p class="form-text">Current file: {{ document.file2.name|slice:"6:" }}</p>
+                                                    </div>
+                                                    {% endif %}
+                                                    <div class="input-group">
+                                                        <input type="file" class="form-control rounded-3" id="file2" name="file2">
+                                                    </div>
+                                                    <div class="form-text">Leave empty to keep current file</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="d-flex flex-column flex-sm-row gap-3 justify-content-end">
+                                    <a href="{% url 'document_detail' document.id %}" class="btn btn-secondary btn-lg rounded-3 px-4">
+                                        <i class="fas fa-times me-2"></i>Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary btn-lg rounded-3 px-4">
+                                        <i class="fas fa-save me-2"></i>Update Document
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Form validation
+    (function() {
+        'use strict'
+
+        // Fetch all the forms we want to apply custom Bootstrap validation styles to
+        var forms = document.querySelectorAll('.needs-validation')
+
+        // Loop over them and prevent submission
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })();
+
+    // File input display enhancement
+    document.querySelectorAll('.form-control[type="file"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const fileName = this.value.split('\\').pop();
+            if (fileName) {
+                const label = this.nextElementSibling;
+                if (label && label.classList.contains('custom-file-label')) {
+                    label.textContent = fileName;
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
